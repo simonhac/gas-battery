@@ -108,6 +108,15 @@ async function ensureSchema(db: Db, rebuild: boolean): Promise<void> {
       PRIMARY KEY (region, kind, day_anchor, tod_bucket)
     )
   `);
+  // day_anchor indexes power the incremental refresh's range filter (DELETE +
+  // SELECT WHERE day_anchor >= since); without them the planner falls back on
+  // a seq scan over tens of millions of rows.
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS tod_daily_day_idx ON tod_daily (day_anchor)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS tod_daily_grouped_day_idx ON tod_daily_grouped (day_anchor)
+  `);
 }
 
 async function refreshDaily(db: Db, sinceDate: string | null): Promise<void> {
@@ -145,7 +154,7 @@ async function refreshGrouped(db: Db, sinceDate: string | null): Promise<void> {
   const dayFilter = sinceDate ? sql`WHERE day_anchor >= ${sinceDate}::date` : sql``;
   await db.execute(sql`
     INSERT INTO tod_daily_grouped (region, kind, day_anchor, tod_bucket, mw)
-    WITH src AS (SELECT * FROM tod_daily ${dayFilter})
+    WITH src AS MATERIALIZED (SELECT * FROM tod_daily ${dayFilter})
     SELECT region, 'mid_merit'::text, day_anchor, tod_bucket, SUM(avg_mw)::float8
       FROM src WHERE fueltech IN ('gas_ccgt','gas_steam','gas_wcmg') GROUP BY 1, 2, 3, 4
     UNION ALL

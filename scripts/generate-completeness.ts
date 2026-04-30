@@ -40,18 +40,24 @@ export async function generateCompleteness(): Promise<void> {
   let maxYear = -Infinity;
   const byRegionTech = new Map<string, Map<number, number>>(); // key = `${region}|${fueltech}`
 
-  for (const region of INGEST_REGIONS) {
-    const tz = regionMeta(region).pgTimezone;
-    const result = await db.execute(sql`
-      SELECT fueltech,
-             EXTRACT(YEAR FROM ts AT TIME ZONE ${tz})::int AS year,
-             COUNT(*)::int AS n
-        FROM power_5m
-       WHERE region = ${region}
-       GROUP BY 1, 2
-    `);
-
-    for (const r of result.rows as { fueltech: string; year: number; n: number }[]) {
+  // Per-region scans are independent; run them in parallel. Each one uses the
+  // (region, fueltech, ts) index, so they don't contend on the same pages.
+  const perRegion = await Promise.all(
+    INGEST_REGIONS.map(async (region) => {
+      const tz = regionMeta(region).pgTimezone;
+      const result = await db.execute(sql`
+        SELECT fueltech,
+               EXTRACT(YEAR FROM ts AT TIME ZONE ${tz})::int AS year,
+               COUNT(*)::int AS n
+          FROM power_5m
+         WHERE region = ${region}
+         GROUP BY 1, 2
+      `);
+      return { region, rows: result.rows as { fueltech: string; year: number; n: number }[] };
+    }),
+  );
+  for (const { region, rows } of perRegion) {
+    for (const r of rows) {
       if (!FUELTECHS.includes(r.fueltech as Fueltech)) continue;
       if (r.year < minYear) minYear = r.year;
       if (r.year > maxYear) maxYear = r.year;
