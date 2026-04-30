@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-04-30T14:59:51.337Z",
-  "startDate": "2026-04-02",
-  "endDate": "2026-05-01",
-  "numDays": 30,
+  "generatedAt": "2026-04-30T13:04:35.945Z",
+  "startDate": "2010-01-01",
+  "endDate": "2026-04-30",
+  "numDays": 5964,
   "numBuckets": 288,
   "seriesNames": [
     "mid_merit_gas",
