@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function CompletenessPage() {
   return (
-    <main className="flex flex-col gap-4 px-8 pt-3 pb-8 max-w-7xl mx-auto w-full">
+    <main className="flex flex-col gap-4 px-8 pt-3 pb-8 mx-auto w-full">
       <header>
         <h1 className="text-2xl font-semibold">Data completeness</h1>
       </header>
