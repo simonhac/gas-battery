@@ -35,9 +35,8 @@ Pulls 5-minute power samples from the Open Electricity API and stores them in Po
 
 ### 2. Aggregate — `scripts/refresh-aggregates.ts`
 
-Builds three timezone-aware Postgres materialised views that bucket every timestamp into one of 288 five-minute time-of-day slots in the region's local time (AEST for NEM, AWST for WEM):
+Maintains two timezone-aware Postgres tables that bucket every timestamp into one of 288 five-minute time-of-day slots in the region's local time (AEST for NEM, AWST for WEM). Default runs only re-aggregate the last ~14 days; pass `--rebuild` for a full re-aggregation from scratch.
 
-- `tod_weekly` — per-week rolling averages.
 - `tod_daily` — per-calendar-day averages, by fueltech.
 - `tod_daily_grouped` — per-day averages collapsed into four series:
   - `mid_merit` — `gas_ccgt` + `gas_steam` + `gas_wcmg`

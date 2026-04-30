@@ -34,15 +34,6 @@ export async function generateStatic(): Promise<void> {
   const endDate = (range.rows[0] as { e: string }).e;
   const numDays = daysBetweenInclusive(startDate, endDate);
 
-  const dayIndex = new Map<string, number>();
-  {
-    const start = parseDate(startDate);
-    for (let i = 0; i < numDays; i++) {
-      const d = new Date(start.getTime() + i * 86_400_000);
-      dayIndex.set(ymd(d), i);
-    }
-  }
-
   const outDir = join(process.cwd(), 'public', 'data');
   mkdirSync(outDir, { recursive: true });
 
@@ -55,25 +46,30 @@ export async function generateStatic(): Promise<void> {
   const files: Record<string, string> = {};
   let totalBytes = 0;
 
-  for (const region of REGIONS) {
-    const rows = await db.execute(sql`
-      SELECT kind::text                          AS kind,
-             to_char(day_anchor, 'YYYY-MM-DD')   AS day,
-             tod_bucket::int                     AS bucket,
-             ROUND(mw)::int                      AS mw
-        FROM tod_daily_grouped
-       WHERE region = ${region}
-    `);
-
-    const buf = new Int16Array(SERIES.length * numDays * TOD_BUCKETS);
-    for (const row of rows.rows as { kind: string; day: string; bucket: number; mw: number }[]) {
-      const sIdx = SERIES.indexOf(row.kind as (typeof SERIES)[number]);
-      if (sIdx < 0) continue;
-      const dIdx = dayIndex.get(row.day);
-      if (dIdx === undefined) continue;
-      buf[sIdx * numDays * TOD_BUCKETS + dIdx * TOD_BUCKETS + row.bucket] = row.mw | 0;
-    }
-
+  // Per-region queries run in parallel — they hit independent slices of the
+  // (region-leading) PK and don't contend on the same pages.
+  const perRegion = await Promise.all(
+    REGIONS.map(async (region) => {
+      const rows = await db.execute(sql`
+        SELECT kind::text                  AS kind,
+               (day_anchor - ${startDate}::date)::int AS d_idx,
+               tod_bucket::int             AS bucket,
+               ROUND(mw)::int              AS mw
+          FROM tod_daily_grouped
+         WHERE region = ${region}
+      `);
+      const buf = new Int16Array(SERIES.length * numDays * TOD_BUCKETS);
+      for (const row of rows.rows as { kind: string; d_idx: number; bucket: number; mw: number }[]) {
+        const sIdx = SERIES.indexOf(row.kind as (typeof SERIES)[number]);
+        if (sIdx < 0) continue;
+        const dIdx = row.d_idx;
+        if (dIdx < 0 || dIdx >= numDays) continue;
+        buf[sIdx * numDays * TOD_BUCKETS + dIdx * TOD_BUCKETS + row.bucket] = row.mw | 0;
+      }
+      return { region, buf };
+    }),
+  );
+  for (const { region, buf } of perRegion) {
     const filename = `tod-${region}-${stamp}.bin`;
     writeFileSync(join(outDir, filename), Buffer.from(buf.buffer));
     files[region] = filename;
@@ -98,10 +94,6 @@ export async function generateStatic(): Promise<void> {
   console.log(
     `generate-static: ${REGIONS.length} regions × ${numDays} days × ${TOD_BUCKETS} buckets × ${SERIES.length} series · ${(totalBytes / 1024 / 1024).toFixed(1)} MB total · ${Date.now() - t0}ms`,
   );
-}
-
-function ymd(d: Date): string {
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
 function parseDate(iso: string): Date {

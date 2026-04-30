@@ -57,7 +57,7 @@ export function loadRegionTimeline(region: string): Promise<Timeline> {
   const p = loadManifest().then(async (manifest) => {
     const filename = manifest.files[region];
     if (!filename) throw new Error(`no static file for region ${region}`);
-    const r = await fetch(`${BASE_PATH}/data/${filename}`, { cache: 'force-cache' });
+    const r = await fetch(`${BASE_PATH}/data/${filename}`);
     if (!r.ok) throw new Error(`region fetch ${r.status}`);
     const arr = new Int16Array(await r.arrayBuffer());
     const seriesLen = manifest.numDays * manifest.numBuckets;

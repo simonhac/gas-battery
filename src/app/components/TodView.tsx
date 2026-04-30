@@ -9,8 +9,8 @@ import type { TodSeriesKey } from '@/lib/tod/timeline-client';
 
 const SERIES_ORDER: TodSeriesKey[] = [
   'battery_discharging',
-  'mid_merit_gas',
   'peaking_gas',
+  'mid_merit_gas',
   'hydro',
 ];
 
@@ -22,8 +22,8 @@ const SERIES_LEGEND: Record<TodSeriesKey, SeriesLegend> = {
   hydro: { name: 'hydro', color: '#0d9488' },
 };
 
-// URL params: each series gets one. mid-merit defaults OFF (writes 'midMerit=on'),
-// the others default ON (write 'peaking=off' / 'battery=off' / 'hydro=off').
+// URL params: each series gets one. battery + peaking default ON; mid-merit + hydro default OFF.
+// Only non-default values are written, so e.g. enabling hydro adds 'hydro=on'.
 const SERIES_URL_KEY: Record<TodSeriesKey, string> = {
   mid_merit_gas: 'midMerit',
   peaking_gas: 'peaking',
@@ -34,11 +34,10 @@ const SERIES_DEFAULT_VISIBLE: Record<TodSeriesKey, boolean> = {
   mid_merit_gas: false,
   peaking_gas: true,
   battery_discharging: true,
-  hydro: true,
+  hydro: false,
 };
 
-const VIEW_MODES = ['28d', '12mo', 'years'] as const;
-type ViewMode = (typeof VIEW_MODES)[number];
+type ViewMode = '28d' | '12mo' | 'years';
 
 const COMPARE_KEYS = ['3y', '5y', '10y', 'avg2012_2022'] as const;
 type CompareKey = (typeof COMPARE_KEYS)[number];
@@ -61,6 +60,15 @@ function compareKeyToMode(key: CompareKey): CompareMode {
     case 'avg2012_2022':
       return { kind: 'avgYears', fromYear: 2012, toYear: 2022 };
   }
+}
+
+function shiftDaysIso(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 // Defaults per view (URL-overridable).
@@ -99,10 +107,10 @@ export function TodView() {
   const viewParam = searchParams.get('view');
   const view: ViewMode =
     viewParam === '28d' || viewParam === 'years' || viewParam === '12mo' ? viewParam : '28d';
-  // Comparison mode for the 28-day view's middle chart (5y prior preserves prior behavior).
+  // Comparison mode for the 28-day view's middle chart.
   const [compareKey, setCompareKey] = useState<CompareKey>(() => {
     const v = searchParams.get('compare');
-    return v === '3y' || v === '5y' || v === '10y' || v === 'avg2012_2022' ? v : '5y';
+    return v === '3y' || v === '5y' || v === '10y' || v === 'avg2012_2022' ? v : 'avg2012_2022';
   });
 
   // Per-view date-range state (each view can have its own from/to).
@@ -121,7 +129,7 @@ export function TodView() {
 
   // Current windowEnd (date the slider points at) — preserved across view changes.
   const [windowEnd, setWindowEnd] = useState<string>(
-    searchParams.get('windowEnd') ?? to28d,
+    searchParams.get('end') ?? to28d,
   );
 
   // URL sync (debounced). Use the History API directly: router.replace() with the App Router
@@ -140,12 +148,16 @@ export function TodView() {
         }
       }
       if (view !== '28d') params.set('view', view);
-      if (view !== 'years') params.set('windowEnd', windowEnd);
+      if (view !== 'years') {
+        const wd = view === '28d' ? 28 : 365;
+        params.set('start', shiftDaysIso(windowEnd, -(wd - 1)));
+        params.set('end', windowEnd);
+      }
       if (from28d !== DEFAULTS['28d'].from) params.set('from28d', from28d);
       if (to28d !== DEFAULTS['28d'].to) params.set('to28d', to28d);
       if (from12mo !== DEFAULTS['12mo'].from) params.set('from12mo', from12mo);
       if (to12mo !== DEFAULTS['12mo'].to) params.set('to12mo', to12mo);
-      if (view === '28d' && compareKey !== '5y') params.set('compare', compareKey);
+      if (view === '28d' && compareKey !== 'avg2012_2022') params.set('compare', compareKey);
       const next = `${window.location.pathname}?${params.toString()}`;
       const current = `${window.location.pathname}${window.location.search}`;
       if (next !== current) window.history.replaceState(null, '', next);

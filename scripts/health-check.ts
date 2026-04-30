@@ -41,11 +41,9 @@ async function main() {
   `);
   console.table(ing.rows);
 
-  console.log('\n=== materialized view row counts ===');
+  console.log('\n=== aggregate-table row counts ===');
   const mvs = await db.execute(sql`
-    SELECT 'tod_weekly' AS view, COUNT(*)::int AS rows FROM tod_weekly
-    UNION ALL
-    SELECT 'tod_daily', COUNT(*)::int FROM tod_daily
+    SELECT 'tod_daily' AS table, COUNT(*)::int AS rows FROM tod_daily
     UNION ALL
     SELECT 'tod_daily_grouped', COUNT(*)::int FROM tod_daily_grouped
   `);

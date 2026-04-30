@@ -76,12 +76,14 @@ export function DateInput({
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState<string>(formatDateDisplay(value));
+  const [prevValue, setPrevValue] = useState(value);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Sync text to external value changes (e.g. picker selection, programmatic update).
-  useEffect(() => {
+  if (value !== prevValue) {
+    setPrevValue(value);
     setText(formatDateDisplay(value));
-  }, [value]);
+  }
 
   useEffect(() => {
     if (!open) return;

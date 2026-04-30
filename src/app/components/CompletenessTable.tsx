@@ -21,9 +21,9 @@ const FUELTECH_LABEL: Record<string, string> = {
   hydro: 'Hydro',
 };
 
-const REGION_COL_WIDTH = '5rem';
-const TECH_COL_WIDTH = '11rem';
-const YEAR_COL_WIDTH = '5rem';
+const REGION_COL_WIDTH = '4rem';
+const TECH_COL_WIDTH = '10rem';
+const YEAR_COL_WIDTH = '3.5rem';
 
 function loadData(): CompletenessData {
   const path = join(process.cwd(), 'public', 'data', 'completeness.json');
@@ -78,27 +78,27 @@ export function CompletenessTable() {
         .
       </p>
 
-      <div className="overflow-auto rounded-lg border border-zinc-200 dark:border-zinc-800 max-h-[80vh] shadow-sm">
-        <table className="border-collapse text-sm" style={{ tableLayout: 'fixed', minWidth: 'max-content' }}>
+      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <table className="w-full border-collapse text-sm" style={{ tableLayout: 'fixed', minWidth: `calc(${REGION_COL_WIDTH} + ${TECH_COL_WIDTH} + ${years.length} * ${YEAR_COL_WIDTH})` }}>
           <colgroup>
             <col style={{ width: REGION_COL_WIDTH }} />
             <col style={{ width: TECH_COL_WIDTH }} />
             {years.map((y) => (
-              <col key={y} style={{ width: YEAR_COL_WIDTH }} />
+              <col key={y} />
             ))}
           </colgroup>
           <thead>
             <tr>
               <th
                 scope="col"
-                className="sticky top-0 left-0 z-30 px-3 py-2 text-left font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border-b border-r border-zinc-200 dark:border-zinc-800"
+                className="sticky left-0 z-20 px-3 py-2 text-left font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border-b border-r border-zinc-200 dark:border-zinc-800"
                 style={{ width: REGION_COL_WIDTH }}
               >
                 Region
               </th>
               <th
                 scope="col"
-                className="sticky top-0 z-20 px-3 py-2 text-left font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border-b border-r border-zinc-200 dark:border-zinc-800"
+                className="sticky z-10 px-3 py-2 text-left font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border-b border-r border-zinc-200 dark:border-zinc-800"
                 style={{ left: REGION_COL_WIDTH, width: TECH_COL_WIDTH }}
               >
                 Fueltech
@@ -107,7 +107,7 @@ export function CompletenessTable() {
                 <th
                   key={y}
                   scope="col"
-                  className="sticky top-0 z-10 px-3 py-2 text-center font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 tabular-nums"
+                  className="px-1.5 py-2 text-center font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 tabular-nums"
                 >
                   {y}
                 </th>
@@ -145,7 +145,7 @@ export function CompletenessTable() {
                       return (
                         <td
                           key={y}
-                          className={`px-3 py-1.5 text-center text-xs tabular-nums ${groupBorder} ${cellClasses(ratio)}`}
+                          className={`px-1.5 py-1.5 text-center text-xs tabular-nums ${groupBorder} ${cellClasses(ratio)}`}
                         >
                           {formatPct(ratio)}
                         </td>
