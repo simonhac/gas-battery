@@ -23,6 +23,7 @@ const FUELTECH_LABEL: Record<string, string> = {
 
 const REGION_COL_WIDTH = '4rem';
 const TECH_COL_WIDTH = '10rem';
+const YEAR_COL_WIDTH = '3.5rem';
 
 function loadData(): CompletenessData {
   const path = join(process.cwd(), 'public', 'data', 'completeness.json');
@@ -77,25 +78,28 @@ export function CompletenessTable() {
         .
       </p>
 
-      <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm">
-        <table className="w-full border-collapse text-sm">
+      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <table className="w-full border-collapse text-sm" style={{ tableLayout: 'fixed', minWidth: `calc(${REGION_COL_WIDTH} + ${TECH_COL_WIDTH} + ${years.length} * ${YEAR_COL_WIDTH})` }}>
           <colgroup>
             <col style={{ width: REGION_COL_WIDTH }} />
             <col style={{ width: TECH_COL_WIDTH }} />
+            {years.map((y) => (
+              <col key={y} />
+            ))}
           </colgroup>
           <thead>
             <tr>
               <th
                 scope="col"
-                className="px-3 py-2 text-left font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border-b border-r border-zinc-200 dark:border-zinc-800"
+                className="sticky left-0 z-20 px-3 py-2 text-left font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border-b border-r border-zinc-200 dark:border-zinc-800"
                 style={{ width: REGION_COL_WIDTH }}
               >
                 Region
               </th>
               <th
                 scope="col"
-                className="px-3 py-2 text-left font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border-b border-r border-zinc-200 dark:border-zinc-800"
-                style={{ width: TECH_COL_WIDTH }}
+                className="sticky z-10 px-3 py-2 text-left font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border-b border-r border-zinc-200 dark:border-zinc-800"
+                style={{ left: REGION_COL_WIDTH, width: TECH_COL_WIDTH }}
               >
                 Fueltech
               </th>
@@ -123,7 +127,7 @@ export function CompletenessTable() {
                       <th
                         scope="rowgroup"
                         rowSpan={regionRows.length}
-                        className="px-3 py-2 align-top text-left text-base font-semibold text-zinc-900 dark:text-zinc-50 bg-white dark:bg-zinc-950 border-b-2 border-r border-zinc-300 dark:border-zinc-700"
+                        className="sticky left-0 z-10 px-3 py-2 align-top text-left text-base font-semibold text-zinc-900 dark:text-zinc-50 bg-white dark:bg-zinc-950 border-b-2 border-r border-zinc-300 dark:border-zinc-700"
                         style={{ width: REGION_COL_WIDTH }}
                       >
                         {region}
@@ -131,8 +135,8 @@ export function CompletenessTable() {
                     )}
                     <th
                       scope="row"
-                      className={`px-3 py-1.5 text-left font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 whitespace-nowrap ${groupBorder}`}
-                      style={{ width: TECH_COL_WIDTH }}
+                      className={`sticky z-10 px-3 py-1.5 text-left font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 whitespace-nowrap ${groupBorder}`}
+                      style={{ left: REGION_COL_WIDTH, width: TECH_COL_WIDTH }}
                     >
                       {FUELTECH_LABEL[row.fueltech] ?? row.fueltech}
                     </th>
