@@ -1,13 +1,14 @@
 {
-  "generatedAt": "2026-04-30T07:51:43.354Z",
-  "startDate": "2017-12-01",
-  "endDate": "2026-04-30",
-  "numDays": 3073,
+  "generatedAt": "2026-04-30T15:13:33.957Z",
+  "startDate": "2010-01-01",
+  "endDate": "2026-05-01",
+  "numDays": 5965,
   "numBuckets": 288,
   "seriesNames": [
     "mid_merit_gas",
     "peaking_gas",
-    "battery_discharging"
+    "battery_discharging",
+    "hydro"
   ],
   "dtype": "int16",
   "unit": "MW",

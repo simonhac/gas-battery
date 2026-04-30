@@ -1,6 +1,6 @@
 1:"$Sreact.fragment"
 2:"$Sreact.suspense"
-3:I[39941,["/gas-battery/_next/static/chunks/01qk2~bgf76vu.js","/gas-battery/_next/static/chunks/0okr5m62_nxp3.js"],"TodView"]
-4:I[90774,["/gas-battery/_next/static/chunks/01qk2~bgf76vu.js"],"OutletBoundary"]
-0:{"rsc":["$","$1","c",{"children":[["$","main",null,{"className":"flex flex-col gap-4 px-8 pt-3 pb-8 max-w-6xl mx-auto w-full","children":[["$","header",null,{"children":["$","h1",null,{"className":"text-2xl font-semibold","children":"Time-of-day generation profile — Gas & Batteries"}]}],["$","$2",null,{"fallback":null,"children":["$","$L3",null,{}]}]]}],[["$","script","script-0",{"src":"/gas-battery/_next/static/chunks/0okr5m62_nxp3.js","async":true}]],["$","$L4",null,{"children":["$","$2",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"BBGlfBq-TZ73TXc-ntnyc"}
+3:I[39941,["/gas-battery/_next/static/chunks/0yjgkx5pxskjc.js","/gas-battery/_next/static/chunks/01as9r5n5k.xo.js","/gas-battery/_next/static/chunks/0fcnf8due5t82.js"],"TodView"]
+4:I[90774,["/gas-battery/_next/static/chunks/0yjgkx5pxskjc.js","/gas-battery/_next/static/chunks/01as9r5n5k.xo.js"],"OutletBoundary"]
+0:{"rsc":["$","$1","c",{"children":[["$","main",null,{"className":"flex flex-col gap-4 px-8 pt-3 pb-8 max-w-6xl mx-auto w-full","children":[["$","header",null,{"children":["$","h1",null,{"className":"text-2xl font-semibold","children":"Time-of-day generation profile — Gas & Batteries"}]}],["$","$2",null,{"fallback":null,"children":["$","$L3",null,{}]}]]}],[["$","script","script-0",{"src":"/gas-battery/_next/static/chunks/0fcnf8due5t82.js","async":true}]],["$","$L4",null,{"children":["$","$2",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"J5Xa4JAowDeQ9JuyDRPLp"}
 5:null
