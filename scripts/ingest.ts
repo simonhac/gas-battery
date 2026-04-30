@@ -16,6 +16,7 @@ import { getDb, schema } from '@/db';
 import { iterateWindows, lastCompleteBoundary, toNaiveLocal } from '@/lib/oe/paginate';
 import { fetchWindow } from '@/lib/oe/fetcher';
 import { INGEST_REGIONS, regionMeta, type Region } from '@/lib/regions';
+import { refreshAggregates } from './refresh-aggregates';
 
 // Fine-grained gas + battery_discharging + hydro. The 5 gas codes are summed
 // at query time; hydro is a single fueltech in OE.
@@ -211,13 +212,8 @@ async function main() {
   console.log(`\ndone: ${totalRows} rows across ${totalWindows} windows in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 
   if (totalRows > 0) {
-    const db = getDb();
-    console.log('refreshing matviews...');
-    const r0 = Date.now();
-    await db.execute(sql`REFRESH MATERIALIZED VIEW tod_weekly`);
-    await db.execute(sql`REFRESH MATERIALIZED VIEW tod_daily`);
-    await db.execute(sql`REFRESH MATERIALIZED VIEW tod_daily_grouped`);
-    console.log(`refreshed in ${((Date.now() - r0) / 1000).toFixed(1)}s`);
+    console.log('refreshing aggregates...');
+    await refreshAggregates();
   }
 }
 

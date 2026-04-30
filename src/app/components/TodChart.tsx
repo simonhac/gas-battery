@@ -25,6 +25,9 @@ export function TodChart({
   showYTicks = true,
   showXTicks = true,
   title,
+  subtitle,
+  hoveredBucket,
+  onHoverChange,
 }: {
   series: TodSeries[];
   width?: number;
@@ -36,6 +39,10 @@ export function TodChart({
   showYTicks?: boolean;
   showXTicks?: boolean;
   title?: string;
+  /** Small text rendered after the title on the same baseline (non-compact only). */
+  subtitle?: string;
+  hoveredBucket?: number | null;
+  onHoverChange?: (bucket: number | null) => void;
 }) {
   // `width` is the SSR/initial render fallback; once mounted the wrapper div's
   // measured CSS width takes over so the SVG renders at exact pixel size and
@@ -67,7 +74,6 @@ export function TodChart({
     .domain([0, yDomainOverride ?? yMax])
     .range([innerH, 0])
     .nice();
-  const yDomainMax = y.domain()[1];
 
   const a = area<[number, number]>()
     .x((_d, i) => x(i))
@@ -77,12 +83,27 @@ export function TodChart({
   const yTicks = y.ticks(compact ? 3 : 5);
   const fontSize = compact ? 10 : 12;
 
+  const interactive = !!onHoverChange;
+  function handleMouseMove(evt: React.MouseEvent<SVGSVGElement>) {
+    if (!onHoverChange) return;
+    const rect = (evt.currentTarget as SVGSVGElement).getBoundingClientRect();
+    // SVG renders at measuredWidth CSS pixels (no viewBox scaling), so
+    // rect.width ≈ measuredWidth and the ratio handles browser zoom uniformly.
+    const px = evt.clientX - rect.left - (rect.width * margin.left) / measuredWidth;
+    const innerPx = (rect.width * innerW) / measuredWidth;
+    const frac = Math.max(0, Math.min(1, px / innerPx));
+    const b = Math.round(frac * (TOD_BUCKETS_PER_DAY - 1));
+    onHoverChange(b);
+  }
+
   return (
     <div ref={containerRef} className="w-full">
       <svg
         width={measuredWidth}
         height={height}
-        className="font-sans block"
+        className={`font-sans block${interactive ? ' cursor-crosshair' : ''}`}
+        onMouseMove={interactive ? handleMouseMove : undefined}
+        onMouseLeave={interactive ? () => onHoverChange?.(null) : undefined}
       >
       {title && !compact && (
         <text
@@ -93,6 +114,11 @@ export function TodChart({
           fill="#111827"
         >
           {title}
+          {subtitle && (
+            <tspan dx={12} fontSize={12} fontWeight={400} fill="#6b7280">
+              {subtitle}
+            </tspan>
+          )}
         </text>
       )}
       <g transform={`translate(${margin.left},${margin.top})`}>
@@ -117,6 +143,20 @@ export function TodChart({
             fillOpacity={0.85}
           />
         ))}
+
+        {/* hover indicator */}
+        {hoveredBucket != null && (
+          <line
+            x1={x(hoveredBucket)}
+            x2={x(hoveredBucket)}
+            y1={0}
+            y2={innerH}
+            stroke="#000"
+            strokeOpacity={0.5}
+            strokeWidth={1}
+            pointerEvents="none"
+          />
+        )}
 
         {/* x-axis ticks */}
         <g transform={`translate(0,${innerH})`}>

@@ -12,6 +12,7 @@ import {
   type Timeline,
   type TodSeriesKey,
 } from '@/lib/tod/timeline-client';
+import { bucketToLowerLabel, formatSeriesShares } from '@/lib/tod/series-shares';
 
 const TODAY_ISO = (() => {
   const d = new Date();
@@ -23,29 +24,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 function formatNice(iso: string): string {
   const d = new Date(`${iso}T00:00:00Z`);
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
-}
-
-const SERIES_LABEL: Record<TodSeriesKey, string> = {
-  mid_merit_gas: 'mid-merit',
-  peaking_gas: 'peaking',
-  battery_discharging: 'battery',
-  hydro: 'hydro',
-};
-const SERIES_ORDER: TodSeriesKey[] = ['mid_merit_gas', 'peaking_gas', 'battery_discharging', 'hydro'];
-
-function formatSeriesShares(series: { fueltech: TodSeriesKey; buckets: number[] }[]): string {
-  const totals = new Map<TodSeriesKey, number>();
-  let grand = 0;
-  for (const s of series) {
-    let sum = 0;
-    for (const v of s.buckets) sum += v;
-    totals.set(s.fueltech, sum);
-    grand += sum;
-  }
-  if (grand === 0) return '';
-  return SERIES_ORDER.filter((k) => totals.has(k))
-    .map((k) => `${SERIES_LABEL[k]} ${Math.round((totals.get(k)! / grand) * 100)}%`)
-    .join(', ');
 }
 
 type YearTile = {
@@ -67,10 +45,15 @@ export function TodSmallMultiples({
 }) {
   const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
+  const [prevRegion, setPrevRegion] = useState(region);
+  if (region !== prevRegion) {
+    setPrevRegion(region);
+    setError(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
-    setError(null);
     loadRegionTimeline(region)
       .then((tl) => {
         if (!cancelled) setTimeline(tl);
@@ -120,30 +103,38 @@ export function TodSmallMultiples({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-3 gap-4">
-        {tiles.map((t) => (
-          <div
-            key={t.year}
-            className="rounded border border-zinc-200 dark:border-zinc-800 p-2"
-          >
-            <div className="mb-1">
-              <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                {t.year === currentYear ? `12 mo to ${formatNice(t.windowEnd)}` : t.year}
-              </div>
-              {!onlyBattery && (
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {formatSeriesShares(t.series)}
+        {tiles.map((t) => {
+          const sharesText =
+            hoveredBucket != null
+              ? `${bucketToLowerLabel(hoveredBucket)}: ${formatSeriesShares(t.series, hoveredBucket)}`
+              : formatSeriesShares(t.series);
+          return (
+            <div
+              key={t.year}
+              className="rounded border border-zinc-200 dark:border-zinc-800 p-2"
+            >
+              <div className="mb-1">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  {t.year === currentYear ? `12 mo to ${formatNice(t.windowEnd)}` : t.year}
                 </div>
-              )}
+                {!onlyBattery && (
+                  <div className="text-[11px] leading-tight text-zinc-500 dark:text-zinc-400 min-h-[1lh] truncate">
+                    {sharesText}
+                  </div>
+                )}
+              </div>
+              <TodChart
+                series={t.series}
+                width={360}
+                height={200}
+                yDomainOverride={yMax}
+                compact
+                hoveredBucket={hoveredBucket}
+                onHoverChange={setHoveredBucket}
+              />
             </div>
-            <TodChart
-              series={t.series}
-              width={360}
-              height={200}
-              yDomainOverride={yMax}
-              compact
-            />
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <DataAttribution />

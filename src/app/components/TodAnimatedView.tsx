@@ -16,6 +16,7 @@ import {
   type Timeline,
   type TodSeriesKey,
 } from '@/lib/tod/timeline-client';
+import { bucketToLowerLabel, formatSeriesShares } from '@/lib/tod/series-shares';
 import type { Region } from '@/lib/regions';
 
 const NUM_BUCKETS = 288;
@@ -258,13 +259,21 @@ export function TodAnimatedView({
   const [duration, setDuration] = useState<number>(6);
   const [durationText, setDurationText] = useState<string>('6');
   const [playing, setPlaying] = useState(false);
+  const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
   const initialFrameDateRef = useRef(initialFrameDate);
-  initialFrameDateRef.current = initialFrameDate;
+  const [prevRegion, setPrevRegion] = useState(region);
+  if (region !== prevRegion) {
+    setPrevRegion(region);
+    setLoadError(null);
+  }
+
+  useEffect(() => {
+    initialFrameDateRef.current = initialFrameDate;
+  }, [initialFrameDate]);
 
   // Load (or re-use cached) static timeline for the active region.
   useEffect(() => {
     let cancelled = false;
-    setLoadError(null);
     loadRegionTimeline(region)
       .then((tl) => {
         if (!cancelled) setTimeline(tl);
@@ -330,10 +339,10 @@ export function TodAnimatedView({
     const totalMs = duration * 1000;
     const span = ranges.userLast - startFrame;
     if (span <= 0) {
-      setPlaying(false);
+      queueMicrotask(() => setPlaying(false));
       return;
     }
-    setFrameIdx(startFrame);
+    if (startFrame !== frameIdx) queueMicrotask(() => setFrameIdx(startFrame));
     const id = setInterval(() => {
       const elapsed = performance.now() - startTs;
       if (elapsed >= totalMs) {
@@ -530,6 +539,13 @@ export function TodAnimatedView({
             series={series}
             yDomainOverride={sharedYMax || aggregates.maxStackedBucket}
             title={`Time-of-day generation profile · ${windowLabelShort} ending ${formatDateNice(currentDate)}`}
+            subtitle={
+              hoveredBucket != null
+                ? `${bucketToLowerLabel(hoveredBucket)}: ${formatSeriesShares(series, hoveredBucket)}`
+                : undefined
+            }
+            hoveredBucket={hoveredBucket}
+            onHoverChange={setHoveredBucket}
             {...(chartHeight !== undefined && { height: chartHeight })}
           />
           {compareMode !== undefined && aggregatesCmp && (
@@ -538,6 +554,13 @@ export function TodAnimatedView({
                 series={seriesCmp}
                 yDomainOverride={sharedYMax || aggregatesCmp.maxStackedBucket}
                 title={cmpChartTitle}
+                subtitle={
+                  hoveredBucket != null
+                    ? `${bucketToLowerLabel(hoveredBucket)}: ${formatSeriesShares(seriesCmp, hoveredBucket)}`
+                    : undefined
+                }
+                hoveredBucket={hoveredBucket}
+                onHoverChange={setHoveredBucket}
                 {...(chartHeight !== undefined && { height: chartHeight })}
               />
               {cmpIncompleteYears.length > 0 && (

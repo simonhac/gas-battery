@@ -3,7 +3,6 @@ import {
   doublePrecision,
   index,
   integer,
-  pgMaterializedView,
   pgTable,
   primaryKey,
   text,
@@ -32,34 +31,32 @@ export const ingestState = pgTable('ingest_state', {
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
-// Managed by scripts/refresh-aggregates.ts (Drizzle does not generate the DDL).
-// week_anchor = Monday of the ISO week (in AEST), the lower bound of the 7-day bucket.
-export const todWeekly = pgMaterializedView('tod_weekly', {
-  region: text('region').notNull(),
-  fueltech: text('fueltech').notNull(),
-  weekAnchor: date('week_anchor', { mode: 'date' }).notNull(),
-  todBucket: integer('tod_bucket').notNull(),
-  avgMw: doublePrecision('avg_mw').notNull(),
-  sampleCount: integer('sample_count').notNull(),
-}).existing();
+// DDL managed by scripts/refresh-aggregates.ts (incremental upserts, not Drizzle).
+// day_anchor = market-tz calendar day (NEM=AEST, WEM=AWST).
+export const todDaily = pgTable(
+  'tod_daily',
+  {
+    region: text('region').notNull(),
+    fueltech: text('fueltech').notNull(),
+    dayAnchor: date('day_anchor', { mode: 'date' }).notNull(),
+    todBucket: integer('tod_bucket').notNull(),
+    avgMw: doublePrecision('avg_mw').notNull(),
+    sampleCount: integer('sample_count').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.region, t.fueltech, t.dayAnchor, t.todBucket] })],
+);
 
-// day_anchor = the AEST calendar day. Used for daily-resolution rolling windows (e.g. 28d view).
-export const todDaily = pgMaterializedView('tod_daily', {
-  region: text('region').notNull(),
-  fueltech: text('fueltech').notNull(),
-  dayAnchor: date('day_anchor', { mode: 'date' }).notNull(),
-  todBucket: integer('tod_bucket').notNull(),
-  avgMw: doublePrecision('avg_mw').notNull(),
-  sampleCount: integer('sample_count').notNull(),
-}).existing();
-
-// Pre-aggregated daily values keyed by region + "kind" (all_gas / peakers / battery).
-// Region 'NEM' is included as the sum of all 5 NEM regions. Reads from this directly
-// avoid the heavy GROUP BY in the timeline endpoint.
-export const todDailyGrouped = pgMaterializedView('tod_daily_grouped', {
-  region: text('region').notNull(),
-  kind: text('kind').notNull(),
-  dayAnchor: date('day_anchor', { mode: 'date' }).notNull(),
-  todBucket: integer('tod_bucket').notNull(),
-  mw: doublePrecision('mw').notNull(),
-}).existing();
+// Pre-aggregated daily values keyed by region + "kind" (mid_merit / peakers / battery / hydro).
+// Region 'NEM' is the sum of all 5 NEM regions. Read directly to avoid the GROUP BY
+// in the timeline endpoint.
+export const todDailyGrouped = pgTable(
+  'tod_daily_grouped',
+  {
+    region: text('region').notNull(),
+    kind: text('kind').notNull(),
+    dayAnchor: date('day_anchor', { mode: 'date' }).notNull(),
+    todBucket: integer('tod_bucket').notNull(),
+    mw: doublePrecision('mw').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.region, t.kind, t.dayAnchor, t.todBucket] })],
+);
