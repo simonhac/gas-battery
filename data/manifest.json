@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T05:04:17.363Z",
+  "generatedAt": "2026-04-30T07:51:43.354Z",
   "startDate": "2017-12-01",
   "endDate": "2026-04-30",
   "numDays": 3073,
@@ -17,6 +17,7 @@
     "QLD1": "tod-QLD1-20260430.bin",
     "SA1": "tod-SA1-20260430.bin",
     "TAS1": "tod-TAS1-20260430.bin",
-    "VIC1": "tod-VIC1-20260430.bin"
+    "VIC1": "tod-VIC1-20260430.bin",
+    "WEM": "tod-WEM-20260430.bin"
   }
 }

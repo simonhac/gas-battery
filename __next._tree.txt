@@ -1,3 +1,3 @@
-:HL["/gas-battery/_next/static/chunks/01nf.judgu17v.css","style"]
+:HL["/gas-battery/_next/static/chunks/0~k.__~aesa.j.css","style"]
 :HL["/gas-battery/_next/static/media/5c285b27cdda1fe8-s.p.0yo6-5yoeeudq.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}},"staleTime":300,"buildId":"tGn9EbwypSdLSKU8zD0CN"}
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}},"staleTime":300,"buildId":"BBGlfBq-TZ73TXc-ntnyc"}
