@@ -8,8 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-dm-sans);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +22,83 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Range slider with a date-pill thumb. The visible "thumb" is an absolutely-positioned
+   div alongside the input; the native thumb is kept transparent but sized so users can
+   still grab and drag. The blue progress fill is a CSS gradient driven by --tod-pct. */
+.tod-pill-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tod-pill-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    #3b82f6 0%,
+    #3b82f6 var(--tod-pct, 0%),
+    #e5e7eb var(--tod-pct, 0%),
+    #e5e7eb 100%
+  );
+}
+
+.tod-pill-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -11px;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: grab;
+}
+.tod-pill-slider:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.tod-pill-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #e5e7eb;
+}
+.tod-pill-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 9999px;
+  background: #3b82f6;
+}
+.tod-pill-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: grab;
+}
+
+.tod-pill-slider:disabled {
+  opacity: 0.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tod-pill-slider::-webkit-slider-runnable-track {
+    background: linear-gradient(
+      to right,
+      #3b82f6 0%,
+      #3b82f6 var(--tod-pct, 0%),
+      #3f3f46 var(--tod-pct, 0%),
+      #3f3f46 100%
+    );
+  }
+  .tod-pill-slider::-moz-range-track {
+    background: #3f3f46;
+  }
 }

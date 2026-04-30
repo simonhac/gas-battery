@@ -6,21 +6,40 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:push": "drizzle-kit push",
+    "ingest": "tsx --env-file=.env.local scripts/ingest.ts",
+    "refresh": "tsx --env-file=.env.local scripts/refresh-aggregates.ts",
+    "generate-static": "tsx --env-file=.env.local scripts/generate-static.ts",
+    "completeness": "tsx --env-file=.env.local scripts/generate-completeness.ts",
+    "generate:og": "tsx scripts/generate-og-image.tsx",
+    "deploy:pages": "npm run generate:og && NEXT_PUBLIC_BASE_PATH=/gas-battery next build && gh-pages -d out -t"
   },
   "dependencies": {
+    "d3": "^7.9.0",
     "next": "16.2.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-day-picker": "^9.14.0",
+    "react-dom": "19.2.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/d3": "^7.4.3",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "gh-pages": "^6.3.0",
+    "openelectricity": "^0.8.1",
+    "p-limit": "^7.3.0",
+    "pg": "^8.20.0",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# generated OG preview image (built by scripts/generate-og-image.tsx)
+/public/og-image.png
+
 # production
 /build
 

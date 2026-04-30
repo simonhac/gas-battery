@@ -1,0 +1,24 @@
+{
+  "generatedAt": "2026-04-30T13:04:35.945Z",
+  "startDate": "2010-01-01",
+  "endDate": "2026-04-30",
+  "numDays": 5964,
+  "numBuckets": 288,
+  "seriesNames": [
+    "mid_merit_gas",
+    "peaking_gas",
+    "battery_discharging",
+    "hydro"
+  ],
+  "dtype": "int16",
+  "unit": "MW",
+  "files": {
+    "NEM": "tod-NEM-20260430.bin",
+    "NSW1": "tod-NSW1-20260430.bin",
+    "QLD1": "tod-QLD1-20260430.bin",
+    "SA1": "tod-SA1-20260430.bin",
+    "TAS1": "tod-TAS1-20260430.bin",
+    "VIC1": "tod-VIC1-20260430.bin",
+    "WEM": "tod-WEM-20260430.bin"
+  }
+}
