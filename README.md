@@ -16,7 +16,7 @@ The ingest pipeline pulls data via the official [`openelectricity`](https://www.
 
 - Networks: NEM (sub-regions NSW1, QLD1, SA1, TAS1, VIC1) and WEM.
 - Resolution: 5-minute dispatch.
-- Date range: 2017-12-01 → present.
+- Date range: 2010-01-01 → present.
 - Fueltechs: `gas_ccgt`, `gas_ocgt`, `gas_recip`, `gas_steam`, `gas_wcmg`, `battery_discharging`, `hydro`.
 
 ## How the data is crunched
@@ -38,10 +38,10 @@ Pulls 5-minute power samples from the Open Electricity API and stores them in Po
 Maintains two timezone-aware Postgres tables that bucket every timestamp into one of 288 five-minute time-of-day slots in the region's local time (AEST for NEM, AWST for WEM). Default runs only re-aggregate the last ~14 days; pass `--rebuild` for a full re-aggregation from scratch.
 
 - `tod_daily` — per-calendar-day averages, by fueltech.
-- `tod_daily_grouped` — per-day averages collapsed into four series:
-  - `mid_merit` — `gas_ccgt` + `gas_steam` + `gas_wcmg`
-  - `peakers` — `gas_ocgt` + `gas_recip`
-  - `battery` — `battery_discharging`
+- `tod_daily_grouped` — per-day averages collapsed into four series (matview `kind` values; renamed in the manifest as shown in parens):
+  - `mid_merit` (manifest: `mid_merit_gas`) — `gas_ccgt` + `gas_steam` + `gas_wcmg`
+  - `peakers` (manifest: `peaking_gas`) — `gas_ocgt` + `gas_recip`
+  - `battery` (manifest: `battery_discharging`) — `battery_discharging`
   - `hydro`
   - Also synthesises a `'NEM'` region as the sum of the five NEM sub-regions.
 
@@ -49,10 +49,10 @@ Maintains two timezone-aware Postgres tables that bucket every timestamp into on
 
 Serialises `tod_daily_grouped` into compact little-endian `Int16` binary files (one per region) plus a manifest:
 
-- Files: `public/data/tod-{REGION}-{YYYYMMDD}.bin` (one per region).
+- Files: `public/data/tod-{REGION}-{YYYYMMDD}.bin` (one per region). The date stamp acts as a cache-buster — each refresh writes new filenames and the manifest is the single source of truth that points at them, so the `.bin` files can be cached aggressively while the (no-cache) manifest stays authoritative.
 - Layout: `numSeries × numDays × 288` MW values, series-major.
 - Manifest: `public/data/manifest.json` lists series order, date range, bucket count, and file names.
-- Roughly ~5 MB per region for the full ~3000-day history.
+- Roughly ~13 MB per region for the full ~5965-day (~16-year) history.
 
 ### 4. Client — `src/lib/tod/timeline-client.ts` + `src/app/components/`
 
@@ -105,7 +105,7 @@ The committed binaries in `public/data/` are enough to use the app locally witho
 | --- | --- |
 | `pnpm db:push` | Apply the Drizzle schema to your local Postgres. |
 | `pnpm ingest` | Catch `power_5m` up to "now" from the Open Electricity API. |
-| `pnpm refresh` | Rebuild the `tod_*` materialised views. |
+| `pnpm refresh` | Incrementally refresh the `tod_*` tables (last 14 days). Pass `--rebuild` for a full rebuild from scratch. |
 | `pnpm generate-static` | Re-emit `public/data/*.bin` and `manifest.json`. |
 | `pnpm build` | Production static export to `out/`. |
 | `pnpm deploy:pages` | Build with `NEXT_PUBLIC_BASE_PATH=/gas-battery` and push to GitHub Pages. |
