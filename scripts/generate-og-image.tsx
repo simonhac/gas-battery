@@ -17,7 +17,8 @@ const MONTHS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
-const COLORS = ['#9a3412', '#f97316', '#4f46e5'];
+const SERIES_INDICES = [1, 2];
+const COLORS = ['#f97316', '#4f46e5'];
 
 type Manifest = {
   numDays: number;
@@ -47,7 +48,7 @@ async function main() {
   const n = endIdx - startIdx + 1;
 
   const series: number[][] = [];
-  for (let s = 0; s < 3; s++) {
+  for (const s of SERIES_INDICES) {
     const buckets = new Array<number>(numBuckets).fill(0);
     for (let d = startIdx; d <= endIdx; d++) {
       const off = s * seriesLen + d * numBuckets;
@@ -126,7 +127,7 @@ async function main() {
             {`12 months to ${endDateNice}`}
           </div>
           <div style={{ fontSize: 34, color: '#52525b', marginTop: 6 }}>
-            {`mid-merit ${pcts[0]}%, peaking ${pcts[1]}%, battery ${pcts[2]}%`}
+            {`peaking ${pcts[0]}%, battery ${pcts[1]}%`}
           </div>
         </div>
 
@@ -214,9 +215,8 @@ async function main() {
             alignItems: 'center',
           }}
         >
-          <Legend color={COLORS[0]} label="mid-merit gas" />
-          <Legend color={COLORS[1]} label="peaking gas" />
-          <Legend color={COLORS[2]} label="battery discharging" />
+          <Legend color={COLORS[0]} label="peaking gas" />
+          <Legend color={COLORS[1]} label="battery discharging" />
           <div style={{ marginLeft: 'auto', display: 'flex', color: '#71717a' }}>
             simonhac.github.io/gas-battery
           </div>
