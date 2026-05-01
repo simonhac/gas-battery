@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { TodChart } from './TodChart';
 import { TodTimelineSummary } from './TodTimelineSummary';
 import { DateInput } from './DateInput';
@@ -17,6 +17,7 @@ import {
   type TodSeriesKey,
 } from '@/lib/tod/timeline-client';
 import { bucketToLowerLabel, formatSeriesShares } from '@/lib/tod/series-shares';
+import { useGifExport } from '@/lib/use-gif-export';
 import type { Region } from '@/lib/regions';
 
 const NUM_BUCKETS = 288;
@@ -260,6 +261,10 @@ export function TodAnimatedView({
   const [durationText, setDurationText] = useState<string>('6');
   const [playing, setPlaying] = useState(false);
   const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
+  const captureRef = useRef<HTMLDivElement | null>(null);
+  const rangesRef = useRef<{ userFirst: number; userLast: number } | null>(null);
+  const durationRef = useRef(duration);
+  durationRef.current = duration;
   const initialFrameDateRef = useRef(initialFrameDate);
   const [prevRegion, setPrevRegion] = useState(region);
   if (region !== prevRegion) {
@@ -293,6 +298,7 @@ export function TodAnimatedView({
     const userLast = clamp(frameForDate(timeline, toDate), 0, timeline.numDays - 1);
     return { userFirst, userLast };
   }, [timeline, fromDate, toDate]);
+  rangesRef.current = ranges;
 
   // One CmpRange per year-offset implied by `compareMode`. Empty when no comparison is requested.
   const cmpRanges = useMemo<CmpRange[]>(() => {
@@ -436,6 +442,34 @@ export function TodAnimatedView({
       : `-cmp-avg-${compareMode.fromYear}-${compareMode.toYear}`
     : '';
 
+  const gifFilename = `tod-${region}-${windowLabelShort}-${fromDate}-${toDate}${cmpFileSuffix}.gif`;
+  const getRange = useCallback(() => {
+    const r = rangesRef.current;
+    return r ? { first: r.userFirst, last: r.userLast } : null;
+  }, []);
+  const getDurationSec = useCallback(() => durationRef.current, []);
+  const setFrameIdxImperative = useCallback((f: number) => setFrameIdx(f), []);
+  const {
+    exportGif,
+    isExporting: isExportingGif,
+    progress: gifProgress,
+    error: gifError,
+  } = useGifExport({
+    captureRef,
+    getRange,
+    getDurationSec,
+    setFrameIdx: setFrameIdxImperative,
+    paddingPx: 16,
+    fps: FPS,
+    filename: gifFilename,
+  });
+
+  const handleExportGifClick = () => {
+    setPlaying(false);
+    setHoveredBucket(null);
+    void exportGif();
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Cohesive controls panel: top row of controls + a date slider whose
@@ -472,18 +506,32 @@ export function TodAnimatedView({
             <span className="text-zinc-500">s @ {FPS} fps</span>
           </label>
 
-          <button
-            type="button"
-            className="ml-auto rounded border border-zinc-300 bg-white px-3 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-900"
-            disabled={!timeline}
-            onClick={() => {
-              if (!timeline || !ranges) return;
-              if (frameIdx >= ranges.userLast) setFrameIdx(ranges.userFirst);
-              setPlaying((p) => !p);
-            }}
-          >
-            {playing ? '⏸ Pause' : '▶ Play'}
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              className="rounded border border-zinc-300 bg-white px-3 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-900 disabled:opacity-50"
+              disabled={!timeline || isExportingGif}
+              onClick={() => {
+                if (!timeline || !ranges) return;
+                if (frameIdx >= ranges.userLast) setFrameIdx(ranges.userFirst);
+                setPlaying((p) => !p);
+              }}
+            >
+              {playing ? '⏸ Pause' : '▶ Play'}
+            </button>
+            <button
+              type="button"
+              className="rounded border border-zinc-300 bg-white px-3 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-900 disabled:opacity-50"
+              disabled={!timeline || isExportingGif || playing}
+              onClick={handleExportGifClick}
+            >
+              {isExportingGif
+                ? gifProgress?.phase === 'encoding'
+                  ? `Encoding ${gifProgress.current}/${gifProgress.total}…`
+                  : `Capturing ${gifProgress?.current ?? 0}/${gifProgress?.total ?? 0}`
+                : 'Export GIF'}
+            </button>
+          </div>
 
         </div>
 
@@ -533,18 +581,19 @@ export function TodAnimatedView({
       </div>
 
       {loadError && <p className="text-sm text-red-600">Error loading timeline: {loadError}</p>}
+      {gifError && <p className="text-sm text-red-600">GIF export failed: {gifError}</p>}
       {timeline && aggregates && ranges ? (
-        <>
+        <div ref={captureRef} className="flex flex-col gap-4">
           <TodChart
             series={series}
             yDomainOverride={sharedYMax || aggregates.maxStackedBucket}
             title={`Time-of-day generation profile · ${windowLabelShort} ending ${formatDateNice(currentDate)}`}
             subtitle={
-              hoveredBucket != null
+              hoveredBucket != null && !isExportingGif
                 ? `${bucketToLowerLabel(hoveredBucket)}: ${formatSeriesShares(series, hoveredBucket)}`
                 : undefined
             }
-            hoveredBucket={hoveredBucket}
+            hoveredBucket={isExportingGif ? null : hoveredBucket}
             onHoverChange={setHoveredBucket}
             {...(chartHeight !== undefined && { height: chartHeight })}
           />
@@ -555,11 +604,11 @@ export function TodAnimatedView({
                 yDomainOverride={sharedYMax || aggregatesCmp.maxStackedBucket}
                 title={cmpChartTitle}
                 subtitle={
-                  hoveredBucket != null
+                  hoveredBucket != null && !isExportingGif
                     ? `${bucketToLowerLabel(hoveredBucket)}: ${formatSeriesShares(seriesCmp, hoveredBucket)}`
                     : undefined
                 }
-                hoveredBucket={hoveredBucket}
+                hoveredBucket={isExportingGif ? null : hoveredBucket}
                 onHoverChange={setHoveredBucket}
                 {...(chartHeight !== undefined && { height: chartHeight })}
               />
@@ -592,8 +641,11 @@ export function TodAnimatedView({
             className="flex flex-wrap items-center justify-between gap-2"
             style={{ paddingRight: CHART_MARGIN_RIGHT }}
           >
-            <DataAttribution />
-            <div className="flex flex-wrap items-center gap-2">
+            <DataAttribution plain={isExportingGif} />
+            <div
+              className="flex flex-wrap items-center gap-2"
+              style={{ visibility: isExportingGif ? 'hidden' : 'visible' }}
+            >
               <ExportCsvButton
                 label="Export Full Series"
                 filename={`tod-${region}-${windowLabelShort}-${fromDate}-${toDate}${cmpFileSuffix}.csv`}
@@ -626,7 +678,7 @@ export function TodAnimatedView({
               />
             </div>
           </div>
-        </>
+        </div>
       ) : (
         <div className="h-[480px] grid place-items-center text-sm text-zinc-500">
           loading timeline (~250ms after first load)…

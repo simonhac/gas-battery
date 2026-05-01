@@ -210,9 +210,16 @@ export function TodTimelineSummary({
           const denom = m + p + b;
           const pct = denom > 0 ? (b / denom) * 100 : 0;
           const label = includeBat ? `${pct.toFixed(0)}%` : '';
-          const labelW = 44;
+          const labelW = 56;
           const labelH = 20;
+          const padX = 6;
+          const iconW = 12;
+          const iconH = 8;
+          const gap = 4;
           const cx = x(currentFrame);
+          // Icon left edge inside the pill, then text fills the rest centred.
+          const iconLeft = -labelW / 2 + padX;
+          const textCx = (iconLeft + iconW + gap + (labelW / 2 - padX)) / 2;
           return (
             <g>
               <line
@@ -232,7 +239,28 @@ export function TodTimelineSummary({
                   rx={4}
                   fill={COLOURS.battery}
                 />
+                {includeBat && (
+                  <g transform={`translate(${iconLeft}, ${-iconH / 2})`} stroke="white" fill="none">
+                    <rect
+                      x={0.5}
+                      y={0.5}
+                      width={iconW - 1}
+                      height={iconH - 1}
+                      rx={1}
+                      strokeWidth={1}
+                    />
+                    <rect
+                      x={iconW}
+                      y={iconH / 4}
+                      width={1.5}
+                      height={iconH / 2}
+                      fill="white"
+                      stroke="none"
+                    />
+                  </g>
+                )}
                 <text
+                  x={textCx}
                   textAnchor="middle"
                   dominantBaseline="central"
                   fontSize={12}

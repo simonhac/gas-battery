@@ -13,11 +13,11 @@ const dmSans = DM_Sans({
 const SITE_URL = 'https://simonhac.github.io/gas-battery/';
 const TITLE = 'Gas & Batteries in Australia';
 const DESCRIPTION =
-  'Time-of-day generation profile for the National Electricity Market — gas (mid-merit + peaking) and battery discharging, at 5-minute resolution.';
+  'Time-of-day generation profile for the National Electricity Market — peaking gas and battery discharging, at 5-minute resolution.';
 // Relative URL (no leading slash) so it resolves against metadataBase including the /gas-battery/ basePath.
 const OG_IMAGE = 'og-image.png';
 const OG_IMAGE_ALT =
-  'NEM 12-month time-of-day generation profile — gas (mid-merit + peaking) and battery discharging.';
+  'NEM 12-month time-of-day generation profile — peaking gas and battery discharging.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
