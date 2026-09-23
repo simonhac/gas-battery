@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { TodSmallMultiples } from './TodSmallMultiples';
 import { TodAnimatedView, type CompareMode } from './TodAnimatedView';
 import { REGIONS, type Region } from '@/lib/regions';
-import type { TodSeriesKey } from '@/lib/tod/timeline-client';
+import { loadManifest, type Manifest, type TodSeriesKey } from '@/lib/tod/timeline-client';
 
 const SERIES_ORDER: TodSeriesKey[] = [
   'battery_discharging',
@@ -71,12 +71,20 @@ function shiftDaysIso(iso: string, days: number): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// Defaults per view (URL-overridable).
-const DEFAULTS = {
-  '28d': { from: '2025-04-30', to: '2026-04-30' },
-  // 12mo from = first day of data; the year-leading-up window fills in as the slider moves.
-  '12mo': { from: '2017-12-01', to: '2026-04-30' },
-} as const;
+// Date defaults per view (URL-overridable), derived from the manifest so they follow the data
+// forward on every refresh instead of being pinned to whenever this file was last edited.
+type DateDefaults = { from28d: string; to28d: string; from12mo: string; to12mo: string };
+
+// 12mo from = first big battery (Hornsdale); the year-leading-up window fills in as the slider
+// moves. Genuinely fixed, unlike the end dates.
+const FROM_12MO = '2017-12-01';
+
+function defaultsFromManifest(manifest: Manifest): DateDefaults {
+  // The manifest's last day is usually partial (the generator runs mid-day), so land on the
+  // last complete day.
+  const to = shiftDaysIso(manifest.endDate, -1);
+  return { from28d: shiftDaysIso(to, -365), to28d: to, from12mo: FROM_12MO, to12mo: to };
+}
 
 export function TodView() {
   const searchParams = useSearchParams();
@@ -113,32 +121,46 @@ export function TodView() {
     return v === '3y' || v === '5y' || v === '10y' || v === 'avg2012_2022' ? v : 'avg2012_2022';
   });
 
-  // Per-view date-range state (each view can have its own from/to).
-  const [from28d, setFrom28d] = useState<string>(
-    searchParams.get('from28d') ?? DEFAULTS['28d'].from,
-  );
-  const [to28d, setTo28d] = useState<string>(
-    searchParams.get('to28d') ?? DEFAULTS['28d'].to,
-  );
-  const [from12mo, setFrom12mo] = useState<string>(
-    searchParams.get('from12mo') ?? DEFAULTS['12mo'].from,
-  );
-  const [to12mo, setTo12mo] = useState<string>(
-    searchParams.get('to12mo') ?? DEFAULTS['12mo'].to,
-  );
+  // Per-view date-range state (each view can have its own from/to). null until either the URL
+  // supplied a value or the manifest has loaded and the defaults are known.
+  const [defaults, setDefaults] = useState<DateDefaults | null>(null);
+  const [from28d, setFrom28d] = useState<string | null>(searchParams.get('from28d'));
+  const [to28d, setTo28d] = useState<string | null>(searchParams.get('to28d'));
+  const [from12mo, setFrom12mo] = useState<string | null>(searchParams.get('from12mo'));
+  const [to12mo, setTo12mo] = useState<string | null>(searchParams.get('to12mo'));
 
   // Current windowEnd (date the slider points at) — preserved across view changes.
-  const [windowEnd, setWindowEnd] = useState<string>(
-    searchParams.get('end') ?? to28d,
-  );
+  const [windowEnd, setWindowEnd] = useState<string | null>(searchParams.get('end'));
+
+  // Fill in whatever the URL didn't specify, once the manifest says where the data ends. The
+  // manifest is memoised and fetched anyway by the timeline loader, so this costs no extra request.
+  useEffect(() => {
+    let cancelled = false;
+    loadManifest()
+      .then((manifest) => {
+        if (cancelled) return;
+        const d = defaultsFromManifest(manifest);
+        setDefaults(d);
+        setFrom28d((v) => v ?? d.from28d);
+        setTo28d((v) => v ?? d.to28d);
+        setFrom12mo((v) => v ?? d.from12mo);
+        setTo12mo((v) => v ?? d.to12mo);
+        setWindowEnd((v) => v ?? searchParams.get('to28d') ?? d.to28d);
+      })
+      .catch(() => {
+        // The chart surfaces manifest failures; nothing useful to default to here.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
 
   // URL sync (debounced). Use the History API directly: router.replace() with the App Router
   // re-runs `useSearchParams` consumers (this component) on every call, which would cause an
   // infinite loop here. window.history.replaceState updates the URL without any React work.
-  const urlTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
-    if (urlTimer.current) clearTimeout(urlTimer.current);
-    urlTimer.current = setTimeout(() => {
+    if (!defaults || !from28d || !to28d || !from12mo || !to12mo || !windowEnd) return;
+    const timer = setTimeout(() => {
       const params = new URLSearchParams();
       params.set('region', region);
       for (const key of SERIES_ORDER) {
@@ -153,19 +175,17 @@ export function TodView() {
         params.set('start', shiftDaysIso(windowEnd, -(wd - 1)));
         params.set('end', windowEnd);
       }
-      if (from28d !== DEFAULTS['28d'].from) params.set('from28d', from28d);
-      if (to28d !== DEFAULTS['28d'].to) params.set('to28d', to28d);
-      if (from12mo !== DEFAULTS['12mo'].from) params.set('from12mo', from12mo);
-      if (to12mo !== DEFAULTS['12mo'].to) params.set('to12mo', to12mo);
+      if (from28d !== defaults.from28d) params.set('from28d', from28d);
+      if (to28d !== defaults.to28d) params.set('to28d', to28d);
+      if (from12mo !== defaults.from12mo) params.set('from12mo', from12mo);
+      if (to12mo !== defaults.to12mo) params.set('to12mo', to12mo);
       if (view === '28d' && compareKey !== 'avg2012_2022') params.set('compare', compareKey);
       const next = `${window.location.pathname}?${params.toString()}`;
       const current = `${window.location.pathname}${window.location.search}`;
       if (next !== current) window.history.replaceState(null, '', next);
     }, 200);
-    return () => {
-      if (urlTimer.current) clearTimeout(urlTimer.current);
-    };
-  }, [region, visibleSeries, view, windowEnd, from28d, to28d, from12mo, to12mo, compareKey]);
+    return () => clearTimeout(timer);
+  }, [region, visibleSeries, view, windowEnd, from28d, to28d, from12mo, to12mo, compareKey, defaults]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -247,7 +267,7 @@ export function TodView() {
         />
       )}
 
-      {view === '12mo' && (
+      {view === '12mo' && from12mo && to12mo && windowEnd && (
         <TodAnimatedView
           region={region}
           visibleSeries={visibleSeries}
@@ -267,7 +287,7 @@ export function TodView() {
         />
       )}
 
-      {view === '28d' && (
+      {view === '28d' && from28d && to28d && windowEnd && (
         <TodAnimatedView
           region={region}
           visibleSeries={visibleSeries}

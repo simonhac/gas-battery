@@ -2,6 +2,10 @@
 
 A static visualisation of how the daily dispatch shape of gas peakers, mid-merit gas, and grid batteries has evolved across Australia's NEM and WEM since the first big battery (Hornsdale) came online in late 2017.
 
+**Live site → <https://simonhac.github.io/gas-battery/>**
+
+[![Screenshot of the time-of-day generation profile site](docs/screenshot.png)](https://simonhac.github.io/gas-battery/)
+
 The site is a fully static Next.js export (no server runtime) — all the heavy lifting happens in offline scripts, and the browser just fetches a small binary per region and draws stacked-area charts with D3.
 
 ## Data source & attribution

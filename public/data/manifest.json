@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-04-30T15:27:24.048Z",
+  "generatedAt": "2026-09-23T07:23:14.200Z",
   "startDate": "2010-01-01",
-  "endDate": "2026-05-01",
-  "numDays": 5965,
+  "endDate": "2026-09-23",
+  "numDays": 6110,
   "numBuckets": 288,
   "seriesNames": [
     "mid_merit_gas",
@@ -13,12 +13,12 @@
   "dtype": "int16",
   "unit": "MW",
   "files": {
-    "NEM": "tod-NEM-20260430.bin",
-    "NSW1": "tod-NSW1-20260430.bin",
-    "QLD1": "tod-QLD1-20260430.bin",
-    "SA1": "tod-SA1-20260430.bin",
-    "TAS1": "tod-TAS1-20260430.bin",
-    "VIC1": "tod-VIC1-20260430.bin",
-    "WEM": "tod-WEM-20260430.bin"
+    "NEM": "tod-NEM-20260923.bin",
+    "NSW1": "tod-NSW1-20260923.bin",
+    "QLD1": "tod-QLD1-20260923.bin",
+    "SA1": "tod-SA1-20260923.bin",
+    "TAS1": "tod-TAS1-20260923.bin",
+    "VIC1": "tod-VIC1-20260923.bin",
+    "WEM": "tod-WEM-20260923.bin"
   }
 }
